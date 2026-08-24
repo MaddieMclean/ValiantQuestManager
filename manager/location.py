@@ -49,7 +49,7 @@ class Shop(Enum):
     def pick_shop(number: int) -> Shop:
         return Shop(number)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name.replace("_", " ").title()
 
 
@@ -78,7 +78,7 @@ class Location:
         self.connections = {neighbour.location.name: neighbour} if neighbour else {}
         all_locations.append(self)
 
-    def explore(self, all_locations: list[Location]):
+    def explore(self, all_locations: list[Location]) -> list[Location]:
         new_paths = randint(1, 4)
         path_lengths = [1 + randint(1, 3) for _ in range(new_paths)]
 
@@ -102,9 +102,13 @@ class Location:
             # this won't break, even on an empty list
             path_lengths = sorted(path_lengths, reverse=True)[:-1]
 
+        new_locations = []
         for distance in path_lengths:
-            new_location = Location(Connection(distance, self), all_locations, self.civ)
-            self.connections[new_location.name] = Connection(distance, new_location)
+            location = Location(Connection(distance, self), all_locations, self.civ)
+            self.connections[location.name] = Connection(distance, location)
+            new_locations.append(location)
+
+        return new_locations
 
     def _generate_type(self, all_locations: list[Location]) -> LocationTypes:
         # Settlement
