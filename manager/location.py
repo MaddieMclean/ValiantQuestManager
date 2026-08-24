@@ -17,18 +17,22 @@ class LocationTypes(StrEnum):
     dungeon = "Dungeon"
     stronghold = "Stronghold"
 
+    @property
+    def is_settlement(self) -> bool:
+        return self in {
+            LocationTypes.village,
+            LocationTypes.town,
+            LocationTypes.city,
+            LocationTypes.castle,
+        }
 
-SETTLEMENTS = {
-    LocationTypes.village,
-    LocationTypes.town,
-    LocationTypes.city,
-    LocationTypes.castle,
-}
-ADVENTURE_SITES = {
-    LocationTypes.landmark,
-    LocationTypes.dungeon,
-    LocationTypes.stronghold,
-}
+    @property
+    def is_adventure_site(self) -> bool:
+        return self in {
+            LocationTypes.landmark,
+            LocationTypes.dungeon,
+            LocationTypes.stronghold,
+        }
 
 
 class Shop(Enum):
@@ -129,7 +133,7 @@ class Location:
                 return LocationTypes.stronghold
 
     def _generate_shops(self) -> Optional[list[Shop]]:
-        if self.type not in SETTLEMENTS:
+        if not self.type.is_settlement:
             return
 
         match self.type:
@@ -143,7 +147,7 @@ class Location:
                 return [Shop.pick_shop(1 + randint(1, 6))]
 
     def _generate_floors(self, all_locations: list[Location]) -> Optional[int]:
-        if self.type not in ADVENTURE_SITES:
+        if not self.type.is_adventure_site:
             return
 
         match self.type:
