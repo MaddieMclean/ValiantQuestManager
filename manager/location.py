@@ -45,10 +45,6 @@ class Shop(Enum):
     armourer = 7
     mage_tower = 8
 
-    @staticmethod
-    def pick_shop(number: int) -> Shop:
-        return Shop(number)
-
     def __str__(self) -> str:
         return self.name.replace("_", " ").title()
 
@@ -142,13 +138,13 @@ class Location:
 
         match self.type:
             case LocationTypes.village:
-                return [Shop.pick_shop(randint(1, 4))]
+                return [Shop(randint(1, 4))]
             case LocationTypes.town:
-                return [Shop.pick_shop(n) for n in sample(range(1, 7), 2)]
+                return [Shop(n) for n in sample(range(1, 7), 2)]
             case LocationTypes.city:
-                return [Shop.pick_shop(n) for n in sample(range(1, 9), 4)]
+                return [Shop(n) for n in sample(range(1, 9), 4)]
             case LocationTypes.castle:
-                return [Shop.pick_shop(1 + randint(1, 6))]
+                return [Shop(1 + randint(1, 6))]
 
     def _generate_floors(self, all_locations: list[Location]) -> Optional[int]:
         if not self.type.is_adventure_site:
