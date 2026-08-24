@@ -158,7 +158,7 @@ class Location:
             case LocationTypes.stronghold:
                 floors = randint(1, 3)
                 if randint(1, 10) == 10:
-                    print("There is a dungeon beneath the Stronghold, generating...")
+                    print("There is a Dungeon beneath the Stronghold, generating...")
                     new_location = Location(
                         Connection(0, self),
                         all_locations,
