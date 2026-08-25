@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from collections import namedtuple
+from dataclasses import dataclass
 from enum import Enum, StrEnum
 from random import randint, sample
 from typing import Optional
 
-Connection = namedtuple("Connection", ["distance", "location"])
+from rich.prompt import Confirm, Prompt
 
+from manager.console import console
 
 class LocationTypes(StrEnum):
     village = "Village"
@@ -48,16 +49,23 @@ class Shop(Enum):
     def __str__(self) -> str:
         return self.name.replace("_", " ").title()
 
+@dataclass
+class Connection:
+    distance: int
+    name: str
+
 
 class Location:
     # todo add a way of editing the name of a location in case of typos
+    # todo separate the data into a dataclass, separate from the functions
+    # todo add method of initialising a class based on save data (related to previous todo)
 
     name: str
     civ: int
     type: LocationTypes
     shops: Optional[list[Shop]]
     floors: Optional[int]
-    connections: dict[str, Connection]
+    connections: dict[str, int]
 
     def __init__(
         self,
@@ -66,12 +74,12 @@ class Location:
         civ: int,
         type_override: Optional[LocationTypes] = None,
     ):
-        self.name = input("Please input location name:")
+        self.name = Prompt.ask("Please input location name:")
         self.civ = civ
         self.type = type_override or self._generate_type(all_locations)
         self.shops = self._generate_shops()
         self.floors = self._generate_floors(all_locations)
-        self.connections = {neighbour.location.name: neighbour} if neighbour else {}
+        self.connections = {neighbour.name: neighbour.distance} if neighbour else {}
         all_locations.append(self)
 
     def explore(self, all_locations: list[Location]) -> list[Location]:
@@ -84,15 +92,11 @@ class Location:
         if connected_to_known_location and _confirm_connected("known location"):
             path_lengths = sorted(path_lengths, reverse=True)
             neighbour_distance = path_lengths.pop()
-            neighbour_name = input("Input the name of the connected location")
+            neighbour_name = Prompt.ask("Input the name of the connected location")
             for location in all_locations:
                 if location.name == neighbour_name:
-                    location.connections[self.name] = Connection(
-                        neighbour_distance, self
-                    )
-                    self.connections[location.name] = Connection(
-                        neighbour_distance, location
-                    )
+                    location.connections[self.name] = neighbour_distance
+                    self.connections[location.name] = neighbour_distance
 
         if connected_to_map_edge and _confirm_connected("map edge"):
             # this won't break, even on an empty list
@@ -100,8 +104,8 @@ class Location:
 
         new_locations = []
         for distance in path_lengths:
-            location = Location(Connection(distance, self), all_locations, self.civ)
-            self.connections[location.name] = Connection(distance, location)
+            location = Location(Connection(distance, self.name), all_locations, self.civ)
+            self.connections[location.name] = distance
             new_locations.append(location)
 
         return new_locations
@@ -116,18 +120,18 @@ class Location:
                 return LocationTypes.village
 
             match randint(1, 6) + self.civ:
-                case 1, 2, 3:
+                case 1 | 2 | 3:
                     return LocationTypes.castle
-                case 4, 5:
+                case 4 | 5:
                     return LocationTypes.town
                 case _:
                     return LocationTypes.city
 
         # Adventure Site
         match randint(1, 6) + self.civ:
-            case 1, 2, 3:
+            case 1 | 2 | 3:
                 return LocationTypes.landmark
-            case 4, 5:
+            case 4 | 5:
                 return LocationTypes.dungeon
             case _:
                 return LocationTypes.stronghold
@@ -158,14 +162,14 @@ class Location:
             case LocationTypes.stronghold:
                 floors = randint(1, 3)
                 if randint(1, 10) == 10:
-                    print("There is a Dungeon beneath the Stronghold, generating...")
+                    console.print("There is a Dungeon beneath the Stronghold, generating...")
                     new_location = Location(
-                        Connection(0, self),
+                        Connection(0, self.name),
                         all_locations,
                         self.civ,
                         type_override=LocationTypes.dungeon,
                     )
-                    self.connections[new_location.name] = Connection(0, new_location)
+                    self.connections[new_location.name] = 0
 
                 return floors
 
@@ -188,16 +192,7 @@ def _confirm_connected(connection: str) -> bool:
     Since we don't simulate the map, we can only roll and see if a connection is possible.
     We need to confirm with the user whether an edge connects back to an existing location, or the map edge.
     """
-
-    connected = ""
-    while connected not in ("yes", "no"):
-        connected = input(
-            f"Could be connected to a {connection}, is this true? (Yes/No)"
-        ).lower()
-        if connected not in ("yes", "no"):
-            print(f"Invalid input: {connected}, please input 'Yes' or 'No'.")
-
-    return True if connected == "yes" else False
+    return Confirm.ask(f"Rolled a {connection} connection, apply? (yes/no)")
 
 
 def _generate_dungeon_floors() -> int:
